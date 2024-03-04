@@ -6,6 +6,7 @@
     clippy::cargo
 )]
 #![allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
+#![feature(generic_const_exprs)]
 
 pub mod board;
 pub mod controllers;

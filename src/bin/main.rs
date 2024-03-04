@@ -89,7 +89,7 @@ fn main() {
                 if args.train {
                     // let mut model =
                     //     mcts::heuristics::nn::edge_strategy::EdgeStrategy::load("model-2");
-                    model.train_model_path("model-2", 100);
+                    // model.train_model_path("model-2", 100);
                 }
             }
         }
