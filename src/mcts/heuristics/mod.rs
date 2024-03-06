@@ -106,7 +106,7 @@ pub struct Heuristics {
     pub parameters: Parameters,
     pub rave: Option<rave::Rave>,
     pub tree_reuse: bool,
-    pub move_nn: Option<NeuralNetwork>,
+    pub move_nn: Option<NeuralNetwork<f32>>,
 }
 
 impl Heuristics {

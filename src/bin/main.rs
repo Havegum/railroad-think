@@ -74,7 +74,7 @@ fn main() {
             let mut model = if args.create_model {
                 mcts::heuristics::nn::edge_strategy::EdgeStrategy::create_model()
             } else {
-                mcts::heuristics::nn::edge_strategy::EdgeStrategy::load("model-2")
+                mcts::heuristics::nn::edge_strategy::EdgeStrategy::load("model-conv")
             };
 
             while args.loop_training || initial_run {
@@ -87,9 +87,7 @@ fn main() {
                 }
 
                 if args.train {
-                    // let mut model =
-                    //     mcts::heuristics::nn::edge_strategy::EdgeStrategy::load("model-2");
-                    // model.train_model_path("model-2", 100);
+                    model.train_model_path("model-conv", 100);
                 }
             }
         }

@@ -30,6 +30,7 @@ mod builder {
     }
 }
 
+#[derive(Clone)]
 pub struct ModelTwo<F: Dtype, DS: Device<F>> {
     convolutional: (
         modules::Conv2D<12, 3, 3, 1, 0, 0, 1, F, DS>,

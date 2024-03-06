@@ -18,5 +18,5 @@
   "prune_minimum_node_count": 80,
   "prune_alpha": 16.0,
   "model": "model-2",
-  "rollout_depth": 8
+  "rollout_depth": 999
 }

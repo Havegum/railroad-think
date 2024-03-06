@@ -23,7 +23,6 @@ use std::{io::Read, time::Instant};
 use dfdx::{data::IteratorBatchExt, losses::mse_loss, optim::Adam, prelude::*, tensor::Cpu};
 use rand::prelude::*;
 use rand::Rng;
-
 const MODEL_PATH: &str = "./src/mcts/heuristics/nn";
 
 // #[cfg(feature = "nightly")]
@@ -42,31 +41,34 @@ type Model = (
     ReLU,
 );
 
-type BuildModel = (
-    modules::Linear<595, 16, f32, Cpu>,
-    ReLU,
-    modules::Linear<16, 16, f32, Cpu>,
-    ReLU,
-    modules::Linear<16, 1, f32, Cpu>,
-    ReLU,
-);
+// type BuildModel = (
+//     modules::Linear<595, 16, f32, Cpu>,
+//     ReLU,
+//     modules::Linear<16, 16, f32, Cpu>,
+//     ReLU,
+//     modules::Linear<16, 1, f32, Cpu>,
+//     ReLU,
+// );
 
 const BATCH_SIZE: usize = 1024;
 
-#[derive(Clone)]
-pub struct EdgeStrategy {
-    model: BuildModel,
-    device: Cpu,
+pub struct EdgeStrategy<E>
+where
+    E: Dtype,
+    Model: BuildOnDevice<AutoDevice, E>,
+    AutoDevice: Device<E>,
+{
+    model: <Model as BuildOnDevice<AutoDevice, E>>::Built,
 }
 
-impl EdgeStrategy {
+impl EdgeStrategy<f32> {
     #[must_use]
     pub fn create_model() -> Self {
         let device: Cpu = Cpu::default();
         // let mut model = Model::build_on_device(&device);
         let mut model = Model::build_on_device(&device);
         model.reset_params();
-        Self { model, device }
+        Self { model }
     }
 
     /// # Panics
@@ -79,13 +81,14 @@ impl EdgeStrategy {
             .load(format!("{MODEL_PATH}/{model_name}.npz"))
             .expect("Could not load model");
 
-        Self { model, device }
+        Self { model }
     }
 
     #[must_use]
     pub fn predict(&self, board: &board::Board, mv: &Move) -> f32 {
+        let device: Cpu = Cpu::default();
         self.model
-            .forward(Self::get_features(board, *mv, &self.device))
+            .forward(Self::get_features(board, *mv, &device))
             .array()[0]
     }
 
@@ -98,7 +101,7 @@ impl EdgeStrategy {
     pub fn train_model_path(&mut self, model_path: &str, epochs: u64) {
         let device: Cpu = Cpu::default();
 
-        let mut optimizer: Adam<BuildModel, f32, Cpu> =
+        let mut optimizer: Adam<<Model as BuildOnDevice<AutoDevice, f32>>::Built, f32, Cpu> =
             dfdx::optim::Adam::new(&self.model, Default::default());
         let mut grads = self.model.alloc_grads();
         let dataset = Dataset::load(&device);
@@ -258,6 +261,15 @@ impl EdgeStrategy {
                 }
             });
         cell
+    }
+}
+
+impl Clone for EdgeStrategy<f32> {
+    fn clone(&self) -> Self {
+        let device: Cpu = Cpu::default();
+        let model = Model::build_on_device(&device);
+        // TODO: copy the model
+        Self { model }
     }
 }
 
