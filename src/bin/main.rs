@@ -150,20 +150,25 @@ fn main() {
                 let seed = args.seed.unwrap_or_else(|| rand::thread_rng().gen());
                 let start_time = time::Instant::now();
 
-                (0..args.count)
+                let scores: Vec<u64> = (0..args.count)
                     .into_par_iter()
                     .map(|i| {
                         // Give each thread a unique seed, while still being determinated from the root seed
                         let seed_bytes = (seed + i as u64).to_be_bytes();
                         play(play_mode, seed_bytes)
                     })
-                    .for_each(|(n, score)| match play_mode {
+                    .inspect(|(n, score)| match play_mode {
                         PlayMode::Iterations(_) => println!("iterations: {n}, score: {score}"),
                         PlayMode::Duration(_) => println!("{n},{score}"),
-                    });
+                    })
+                    .map(|(_, score)| score as u64)
+                    .collect();
                 println!(
-                    "Played {} games in {:.1}s",
+                    "Played {} games, average score {:.1} [{}-{}], finished in {:.1}s",
                     args.count,
+                    scores.iter().sum::<u64>() as f64 / args.count as f64,
+                    scores.iter().min().unwrap(),
+                    scores.iter().max().unwrap(),
                     start_time.elapsed().as_secs_f32(),
                 );
             }
