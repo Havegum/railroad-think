@@ -1,3 +1,4 @@
+#![allow(clippy::all)]
 // use crate::board::Board;
 use crate::game::mv::Move;
 use std::collections::HashMap;

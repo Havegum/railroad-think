@@ -33,7 +33,7 @@ pub struct Parameters {
     pub prune_alpha: f64,
 }
 
-/// TODO: make "from_json" and "to_json", and make the appropriate json
+/// TODO: make `from_json` and `to_json`, and make the appropriate json
 // https://docs.rs/serde_json/latest/serde_json/
 impl Parameters {
     /// Save the heuristic parameters to a json file.
@@ -46,7 +46,6 @@ impl Parameters {
         Ok(())
     }
 
-    #[must_use]
     /// Load the heuristic parameters from a json file.
     ///
     /// # Panics
@@ -54,7 +53,6 @@ impl Parameters {
     ///
     /// # Errors
     /// Returns an error if the file cannot be opened.
-    ///
     pub fn from_json(path: &str) -> Result<Self, String> {
         if let Ok(mut file) = File::open(path) {
             let mut contents = String::new();
@@ -64,7 +62,7 @@ impl Parameters {
 
             match serde_json::from_str(&contents) {
                 Ok(parameters) => Ok(parameters),
-                Err(e) => Err(format!("Error loading Heuristics: {}", e)),
+                Err(e) => Err(format!("Error loading Heuristics: {e}")),
             }
         } else {
             Err("Error loading Heuristics: Could not find path".to_string())
@@ -125,18 +123,22 @@ impl Heuristics {
         }
     }
 
-    pub fn get_default_model(device: WgpuDevice) -> Model<Wgpu> {
+    #[must_use]
+    /// # Panics
+    /// Panics if the model files can't be found, or if the trained model does not match the config.
+    pub fn get_default_model(device: &WgpuDevice) -> Model<Wgpu> {
         const MODEL_DIR: &str = "./src/mcts/heuristics/nn";
         let config = TrainingConfig::load(format!("{MODEL_DIR}/model.config.json"))
             .expect("Config should exist for the model");
         let record = CompactRecorder::new()
-            .load(format!("{MODEL_DIR}/model").into(), &device)
+            .load(format!("{MODEL_DIR}/model").into(), device)
             .expect("Trained model should exist");
-        let model = config.model.init(&device).load_record(record);
-        model
+
+        config.model.init(device).load_record(record)
     }
 
-    pub fn with_model(mut self, device: WgpuDevice) -> Self {
+    #[must_use]
+    pub fn with_model(mut self, device: &WgpuDevice) -> Self {
         self.move_nn = Some(Self::get_default_model(device));
         self
     }
@@ -254,7 +256,7 @@ impl Heuristics {
     }
 
     // #[must_use]
-    /// Recieve a value if the move connects to the edge of the longest network path
+    // Recieve a value if the move connects to the edge of the longest network path
     // fn piece_connects_to_longest_path(&self, game: &Game, mv: Move) -> f64 {
     //     if let Move::Place(placement) = mv {
     //         let connects_to_longest_path = game.board.piece_connects_to_longest_path(placement);
@@ -283,10 +285,13 @@ impl Heuristics {
     //     }
     // }
     #[must_use]
+    ///
+    /// # Panics
+    /// Panics if backend device can not be found to load tensor data into.
     pub fn get_move_estimation(&mut self, game: &Game, mv: Move) -> f64 {
         let board = &game.board;
         if let Some(model) = &self.move_nn {
-            let device = model.devices().get(0).unwrap().clone();
+            let device = model.devices().first().unwrap().clone();
 
             let board_features = DataItem::get_features(board, mv);
             let board_features = Tensor::from_data([board_features], &device);
@@ -294,7 +299,7 @@ impl Heuristics {
             let meta_features = DataItem::get_heuristics(board, mv);
             let meta_features = Tensor::from_data([meta_features], &device);
 
-            model.forward(board_features, meta_features).into_scalar() as f64
+            f64::from(model.forward(board_features, meta_features).into_scalar())
         } else {
             let turn = game.turn as usize;
             self.special_use(turn, mv)
@@ -369,7 +374,7 @@ impl Heuristics {
 
         let exploration_term = exploration_term + self.special_use(turn, mv);
 
-        if let Some(_) = &self.move_nn {
+        if self.move_nn.is_some() {
             unimplemented!("Neural net not yet implemented!");
         } else if let Some(rave) = self.rave.as_ref() {
             let k = 1.;

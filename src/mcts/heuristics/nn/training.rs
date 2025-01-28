@@ -55,13 +55,13 @@ pub fn run<B: AutodiffBackend>(device: &B::Device) {
     let mut checkpoint = if std::path::Path::new(&format!("{ARTIFACT_DIR}/checkpoint")).exists() {
         fs::read_dir(format!("{ARTIFACT_DIR}/checkpoint"))
             .unwrap()
-            .filter_map(|f| f.ok())
+            .filter_map(std::result::Result::ok)
             .filter_map(|dir_entry| dir_entry.file_name().into_string().ok())
-            .filter(|name| name.starts_with("model-") && name.contains("."))
-            .map(|string| (&string.as_str()[6..]).to_string())
-            .map(|string| string.split(".").next().unwrap().to_string())
+            .filter(|name| name.starts_with("model-") && name.contains('.'))
+            .map(|string| string.as_str()[6..].to_string())
+            .map(|string| string.split('.').next().unwrap().to_string())
             .filter_map(|string| string.parse::<usize>().ok())
-            .fold(0, |acc, next| acc.max(next))
+            .fold(0, std::cmp::Ord::max)
     } else {
         0
     };
@@ -86,9 +86,12 @@ pub fn run<B: AutodiffBackend>(device: &B::Device) {
                 format!("./tmp/{file}.mpk"),
                 format!("{ARTIFACT_DIR}/checkpoint/{file}-1.mpk"),
             )
-            .expect(&format!(
-                "Could not move checkpoint (./tmp/{file}-{checkpoint}.mpk) from temporary dir"
-            ));
+            .unwrap_or_else(|_| {
+                panic!(
+                    "Could not move checkpoint (./tmp/{}-{}.mpk) from temporary dir",
+                    file, checkpoint
+                )
+            });
         }
         checkpoint = 1;
     }

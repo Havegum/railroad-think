@@ -147,9 +147,8 @@ impl Game {
     /// If we can play specials in this turn, specials are added to the list
     #[must_use]
     pub fn generate_moves(&mut self) -> Vec<Move> {
-        match &self.available_moves {
-            Some(moves) => return moves.clone(),
-            None => (),
+        if let Some(moves) = &self.available_moves {
+            return moves.clone();
         }
 
         if self.ended {

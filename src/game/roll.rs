@@ -43,12 +43,16 @@ impl Hash for Roll {
     }
 }
 
-impl ToString for Roll {
-    fn to_string(&self) -> String {
-        self.0
-            .iter()
-            .map(std::string::ToString::to_string)
-            .collect::<Vec<_>>()
-            .join(",")
+impl std::fmt::Display for Roll {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            self.0
+                .iter()
+                .map(std::string::ToString::to_string)
+                .collect::<Vec<_>>()
+                .join(",")
+        )
     }
 }

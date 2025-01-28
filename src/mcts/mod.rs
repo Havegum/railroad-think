@@ -39,10 +39,9 @@ impl Node {
         }
     }
 
-    /// Expand the list of children to this node, but don't visit
-
     // Never inline, to make CPU profiling easier
     #[inline(never)]
+    /// Expand the list of children to this node, but don't visit
     pub fn generate_children(&mut self, game: &mut Game) {
         self.children = game
             .generate_moves()
@@ -101,6 +100,8 @@ impl Edge {
         }
     }
 
+    // Never inline, to make CPU profiling easier
+    #[inline(never)]
     /// One iteration of mcts
     /// Recursively `select`s through the tree,
     /// updating the `visits` count and scores along the way
@@ -108,9 +109,6 @@ impl Edge {
     ///
     /// # Panics
     /// Panics if no legal moves could be selected from game position
-
-    // Never inline, to make CPU profiling easier
-    #[inline(never)]
     pub fn select(
         &mut self,
         mut game: Game,
@@ -241,7 +239,7 @@ impl Edge {
         game: &Game,
     ) -> Score {
         if self.heuristic_value.is_none() {
-            self.heuristic_value = Some(heuristics.get_move_estimation(game, self.mv))
+            self.heuristic_value = Some(heuristics.get_move_estimation(game, self.mv));
         }
 
         heuristics.get_exploration_value_given_heuristic(
@@ -277,15 +275,13 @@ impl Edge {
         }
     }
 
+    #[inline(never)]
     /// Does random moves until `game.ended`
     /// Returns `(score, depth_zero_is_terminal)`
     ///
     /// ### Ideas:
     /// * Use heuristics instead of random moves
     /// * Drop rollouts and just use the heuristic to estimate the score
-
-    // Never inline, to make CPU profiling easier
-    #[inline(never)]
     fn rollout(
         mut game: Game,
         heuristics: &mut Heuristics,
@@ -365,6 +361,8 @@ impl MonteCarloTree {
     }
 
     #[must_use]
+    /// # Panics
+    /// Panics if most visited node is None
     pub fn calculate_depth(&self) -> u16 {
         let mut depth = 0;
         let mut edge = &self.root;
@@ -374,7 +372,11 @@ impl MonteCarloTree {
                     if node.children.len() == 0 {
                         break;
                     }
-                    edge = node.children.iter().max_by_key(|edge| edge.visits).unwrap();
+                    edge = node
+                        .children
+                        .iter()
+                        .max_by_key(|edge| edge.visits)
+                        .expect("Could not find most visited node edge");
                     depth += 1;
                 }
                 Multiple(nodes) => {

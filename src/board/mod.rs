@@ -164,11 +164,11 @@ impl Board {
         board
     }
 
-    fn get(&self, square: Square<BOARD_SIZE>) -> &Option<Placement> {
+    fn get(&self, square: Square<BOARD_SIZE>) -> Option<&Placement> {
         if square.raw < BOARD_SIZE.pow(2) {
-            &self[&square]
+            self[&square].as_ref()
         } else {
-            &None
+            None
         }
     }
 
@@ -305,7 +305,7 @@ impl Board {
             .map(|source_dir| Self::get_neighbor(placement.square, source_dir))
             .filter(|square| self.get(*square).is_none())
             .filter(|square| !square.out_of_bounds())
-            .any(|square| self.frontier.get(&square).is_some())
+            .any(|square| self.frontier.contains_key(&square))
     }
 
     #[must_use]
@@ -319,7 +319,7 @@ impl Board {
                     .filter(|dir| dir != &source_dir.inverse())
                     .map(|dir| Self::get_neighbor(square, dir))
                     .filter(|square| !square.out_of_bounds())
-                    .any(|square| self.frontier.get(&square).is_some())
+                    .any(|square| self.frontier.contains_key(&square))
             })
     }
 
@@ -469,7 +469,7 @@ impl Board {
             .frontier
             .iter()
             .flat_map(|(square, connections)| connections.iter().map(move |(d, c)| (square, d, c)))
-            .filter_map(|(&square, &dir, _)| self.get(Self::get_neighbor(square, dir)).as_ref())
+            .filter_map(|(&square, &dir, _)| self.get(Self::get_neighbor(square, dir)))
             .count();
         let open_end_score = i32::try_from(open_end_score).unwrap_or(i32::MAX);
 
@@ -620,7 +620,7 @@ impl Board {
         // Look for transitional and edge connections:
         for placement in self.iter() {
             let square = placement.square;
-            if end_nodes.get(&square).is_some() {
+            if end_nodes.contains(&square) {
                 continue;
             }
 

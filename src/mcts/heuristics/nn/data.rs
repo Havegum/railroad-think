@@ -1,5 +1,5 @@
+/// See: <https://burn.dev/burn-book/basic-workflow/data.html>
 use burn::data::dataset::InMemDataset;
-/// See: https://burn.dev/burn-book/basic-workflow/data.html
 use rusqlite::OpenFlags;
 
 use crate::board::placement::Placement;
@@ -12,30 +12,32 @@ use burn::data::dataloader::batcher::Batcher;
 use burn::prelude::*;
 use std::str::FromStr;
 
+#[must_use]
+/// # Panics
+/// Panics if the database does not exist and then could not be created.
 pub fn get_connection() -> rusqlite::Connection {
     let conn = rusqlite::Connection::open_with_flags(
         "./data.sqlite",
         OpenFlags::SQLITE_OPEN_READ_WRITE | OpenFlags::SQLITE_OPEN_NO_MUTEX,
     );
 
-    match conn {
-        Ok(c) => c,
-        Err(_) => {
-            let conn = rusqlite::Connection::open("./data.sqlite").unwrap();
+    if let Ok(c) = conn {
+        c
+    } else {
+        let conn = rusqlite::Connection::open("./data.sqlite").unwrap();
 
-            conn.execute(
-                "CREATE TABLE matches (
+        conn.execute(
+            "CREATE TABLE matches (
                     id     INTEGER PRIMARY KEY,
                     board  TEXT NOT NULL,
                     move   TEXT NOT NULL,
                     score  INTEGER NOT NULL
                 )",
-                (), // empty list of parameters.
-            )
-            .unwrap();
+            (), // empty list of parameters.
+        )
+        .unwrap();
 
-            conn
-        }
+        conn
     }
 }
 
@@ -75,12 +77,14 @@ impl GameDataset {
             .collect()
     }
 
+    #[must_use]
     pub fn train() -> InMemDataset<DataItem> {
         let all = Self::get_all();
         let slice_len = (all.len() as f32 * 0.75).ceil() as usize;
         InMemDataset::new(all[0..slice_len].to_vec())
     }
 
+    #[must_use]
     pub fn test() -> InMemDataset<DataItem> {
         let all = Self::get_all();
         let slice_len = (all.len() as f32 * 0.75).ceil() as usize + 1;
@@ -134,6 +138,7 @@ impl DataItem {
         cell
     }
 
+    #[must_use]
     pub fn get_heuristics(board: &Board, mv: Move) -> [f32; 7] {
         fn to_f32(boolean: bool) -> f32 {
             if boolean {
