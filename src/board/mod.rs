@@ -451,28 +451,15 @@ impl Board {
         networks
     }
 
-    /// Score the board.
-    /// We just apply the rules of the game, but assume we always get the longest road and rail
     #[must_use]
-    pub fn score(&self) -> i32 {
-        let networks = self.get_networks();
+    pub fn pct_filled(&self) -> f32 {
+        let total = BOARD_SIZE.pow(2) as f32;
+        let filled = self.placements.iter().filter(|p| p.is_some()).count() as f32;
+        filled / total
+    }
 
-        let network_score = networks
-            .iter()
-            .map(|(_, exits)| match exits {
-                12 => 45,
-                exits => (exits.saturating_sub(1)) * 4,
-            })
-            .sum::<u8>() as usize;
-
-        let open_end_score = self
-            .frontier
-            .iter()
-            .flat_map(|(square, connections)| connections.iter().map(move |(d, c)| (square, d, c)))
-            .filter_map(|(&square, &dir, _)| self.get(Self::get_neighbor(square, dir)))
-            .count();
-        let open_end_score = i32::try_from(open_end_score).unwrap_or(i32::MAX);
-
+    #[must_use]
+    pub fn score_center_tiles(&self) -> i32 {
         #[rustfmt::skip]
         let center_tiles: [(u8, u8); 9] = [
             (2, 2), (3, 2), (4, 2),
@@ -480,17 +467,49 @@ impl Board {
             (2, 4), (3, 4), (4, 4),
         ];
 
-        let center_tile_score = center_tiles
+        center_tiles
             .iter()
             .map(|&(x, y)| Square::new(x, y))
             .filter(|&square| self.has(square))
-            .count();
+            .count() as i32
+    }
+
+    #[must_use]
+    pub fn score_open_end(&self) -> i32 {
+        self.frontier
+            .iter()
+            .flat_map(|(square, connections)| connections.iter().map(move |(d, c)| (square, d, c)))
+            .filter_map(|(&square, &dir, _)| self.get(Self::get_neighbor(square, dir)))
+            .count() as i32
+    }
+
+    #[must_use]
+    pub fn score_network(&self) -> i32 {
+        let networks = self.get_networks();
+        let network_score = networks
+            .iter()
+            .map(|(_, exits)| match exits {
+                12 => 45,
+                exits => (exits.saturating_sub(1)) * 4,
+            })
+            .sum::<u8>() as i32;
+        network_score
+    }
+
+    /// Score the board.
+    /// We just apply the rules of the game, but assume we always get the longest road and rail
+    #[must_use]
+    pub fn score(&self) -> i32 {
+        let network_score = self.score_network();
+
+        let open_end_score = self.score_open_end();
+        let center_tile_score = self.score_center_tiles();
 
         let end_nodes = self.get_end_nodes();
         let longest_rail = self.get_longest(Rail, &end_nodes);
-        let rail_score = longest_rail.len();
+        let rail_score = longest_rail.len() as i32;
         let longest_road = self.get_longest(Road, &end_nodes);
-        let road_score = longest_road.len();
+        let road_score = longest_road.len() as i32;
 
         let score = network_score + road_score + rail_score + center_tile_score;
         let score = i32::try_from(score).unwrap_or(i32::MAX);
