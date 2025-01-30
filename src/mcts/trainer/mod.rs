@@ -154,6 +154,9 @@ pub fn generate_training_data(count: u64, iterations: u64) {
         let mut game = Game::new_from_seed(game_seed);
         let mut mcts = MonteCarloTree::new_from_seed(game.clone(), mcts_seed);
 
+        let device = burn::backend::wgpu::WgpuDevice::default();
+        mcts.heuristics.move_nn = Some(Heuristics::get_default_model(&device));
+
         let mut data: Vec<(String, String)> = Vec::new();
 
         while !game.ended {

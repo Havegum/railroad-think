@@ -98,7 +98,7 @@ pub fn run<B: AutodiffBackend>(device: &B::Device) {
 
     // Config
     let config_optimizer = AdamConfig::new();
-    let config = TrainingConfig::new(ModelConfig::new(), config_optimizer).with_num_epochs(1);
+    let config = TrainingConfig::new(ModelConfig::new(), config_optimizer).with_num_epochs(200);
     B::seed(config.seed);
 
     // Data

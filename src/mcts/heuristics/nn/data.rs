@@ -29,8 +29,8 @@ pub fn get_connection() -> rusqlite::Connection {
         conn.execute(
             "CREATE TABLE matches (
                     id     INTEGER PRIMARY KEY,
-                    board  TEXT NOT NULL,
-                    move   TEXT NOT NULL,
+                    board  TEXT    NOT NULL,
+                    move   TEXT    NOT NULL,
                     score  INTEGER NOT NULL
                 )",
             (), // empty list of parameters.
@@ -62,7 +62,7 @@ pub struct GameDataset {}
 
 impl GameDataset {
     fn get_all() -> Vec<DataItem> {
-        get_connection()
+        let all_data: Vec<DataItem> = get_connection()
             .prepare("SELECT board, move, score FROM matches")
             .expect("Could not get data from sqlite database")
             .query_map([], |row| {
@@ -74,7 +74,12 @@ impl GameDataset {
             })
             .unwrap()
             .filter_map(Result::ok)
-            .collect()
+            .collect();
+
+        let max_len = 100_000;
+
+        let start = all_data.len().saturating_sub(max_len);
+        all_data[start..].to_vec()
     }
 
     #[must_use]
@@ -93,8 +98,8 @@ impl GameDataset {
 }
 
 impl DataItem {
-    pub fn get_features(board: &Board, mv: Move) -> [[[f32; 12]; 7]; 7] {
-        // let mut data = [0.0; 7 * 7 * 12];
+    #[must_use]
+    pub fn get_board_features(board: &Board) -> [[[f32; 12]; 7]; 7] {
         let mut data = [[[0.0; 12]; 7]; 7];
         for y in 0..BOARD_SIZE {
             for x in 0..BOARD_SIZE {
@@ -105,6 +110,12 @@ impl DataItem {
                 data[y][x] = ft;
             }
         }
+        data
+    }
+
+    #[must_use]
+    pub fn get_features(board: &Board, mv: Move) -> [[[f32; 12]; 7]; 7] {
+        let mut data = Self::get_board_features(board);
 
         if let Move::Place(placement) = mv {
             let square = placement.square;

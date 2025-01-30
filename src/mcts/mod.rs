@@ -153,65 +153,30 @@ impl Edge {
         assert_ne!(node.children.len(), 0, "No legal moves!");
         let mut best_child_node_index = 0;
 
-        #[cfg(feature = "pruning")]
-        {
-            let parent_visits = self.visits;
-            let mut children = node
-                .children
-                .iter()
-                .filter(|edge| !edge.pruned)
-                .map(|edge| edge.exploration_value(parent_visits, heuristics, &game))
-                .enumerate()
-                .collect::<Vec<_>>();
+        let mut best_exploration_value = Score::MIN;
 
-            #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
-            struct ComparableScore(Score);
-            impl Ord for ComparableScore {
-                fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-                    self.partial_cmp(other).unwrap_or(std::cmp::Ordering::Equal)
-                }
-            }
-
-            impl Eq for ComparableScore {}
-            let n = node.children.len();
-            let t = heuristics.parameters.prune_minimum_node_count as f64;
-            let alpha = heuristics.parameters.prune_alpha;
-
-            let remaining_nodes = (alpha * (n as f64).ln()).max(t).ceil() as usize;
-
-            if n > remaining_nodes {
-                children.sort_unstable_by_key(|(_, val)| ComparableScore(-*val));
-
-                for (i, _) in children.iter().skip(remaining_nodes) {
-                    let child = node.children.get_mut(*i).unwrap();
-                    child.pruned = true;
-                }
-                best_child_node_index = children.first().unwrap().0;
-            } else {
-                let mut best_exploration_value = Score::MIN;
-
-                for (i, edge) in node.children.iter().enumerate() {
-                    let child_exploration_value =
-                        edge.exploration_value(self.visits, heuristics, &game);
-                    if child_exploration_value >= best_exploration_value {
-                        best_child_node_index = i;
-                        best_exploration_value = child_exploration_value;
-                    }
-                }
+        if heuristics.move_nn.is_some() {
+            for (estimated_value, edge) in heuristics
+                .get_move_estimations(
+                    &game,
+                    &node
+                        .children
+                        .iter()
+                        .map(|edge| edge.mv)
+                        .collect::<Vec<Move>>(),
+                )
+                .into_iter()
+                .zip(node.children.iter_mut())
+            {
+                edge.heuristic_value = Some(estimated_value.into());
             }
         }
 
-        #[cfg(not(feature = "pruning"))]
-        {
-            let mut best_exploration_value = Score::MIN;
-
-            for (i, edge) in node.children.iter_mut().enumerate() {
-                let child_exploration_value =
-                    edge.exploration_value(self.visits, heuristics, &game);
-                if child_exploration_value >= best_exploration_value {
-                    best_child_node_index = i;
-                    best_exploration_value = child_exploration_value;
-                }
+        for (i, edge) in node.children.iter_mut().enumerate() {
+            let child_exploration_value = edge.exploration_value(self.visits, heuristics, &game);
+            if child_exploration_value >= best_exploration_value {
+                best_child_node_index = i;
+                best_exploration_value = child_exploration_value;
             }
         }
 

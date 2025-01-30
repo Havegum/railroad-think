@@ -312,6 +312,39 @@ impl Heuristics {
     }
 
     #[must_use]
+    /// # Panics
+    /// Panics if:
+    /// * A model is not part of this instance of Heuristics.
+    /// * A device can not be found to load tensor data into.
+    /// * The output can not be converted to a vector.
+    pub fn get_move_estimations(&mut self, game: &Game, moves: &[Move]) -> Vec<f32> {
+        assert!(self.move_nn.is_some());
+        let device = self.move_nn.devices().first().unwrap().clone();
+
+        let board_features = DataItem::get_board_features(&game.board);
+        let board_features: Tensor<Wgpu, 3> = Tensor::from_data(board_features, &device);
+        let board_features = board_features.expand([moves.len(), 7, 7, 12]);
+
+        let meta_features = moves
+            .iter()
+            .map(|mv| DataItem::get_heuristics(&game.board, *mv))
+            .map(|ft| TensorData::from(ft).convert::<f32>())
+            .map(|data| Tensor::<Wgpu, 1>::from_data(data, &device))
+            .collect::<Vec<_>>();
+
+        let meta_features = Tensor::stack(meta_features, 0);
+
+        let model = self.move_nn.as_ref().unwrap();
+
+        let output = model.forward(board_features, meta_features);
+
+        output
+            .into_data()
+            .into_vec()
+            .expect("Could not get move estimations")
+    }
+
+    #[must_use]
     pub fn get_exploration_value_given_heuristic(
         &self,
         mv: Move,

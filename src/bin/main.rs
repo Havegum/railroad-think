@@ -52,6 +52,10 @@ struct PlayArgs {
 
     #[arg(short, long)]
     loop_play: bool,
+
+    /// Use neural network for estimating move values
+    #[arg(long)]
+    use_neural_network: bool,
 }
 
 fn poisson(lambda: f64) -> f64 {
@@ -111,16 +115,16 @@ fn main() {
                 }
 
                 if args.train {
-                    // use burn::backend::{Autodiff, Wgpu};
-                    // type Backend = Wgpu<f32, i32>;
-                    // type AutodiffBackend = Autodiff<Backend>;
-                    // let device = burn::backend::wgpu::WgpuDevice::default();
+                    use burn::backend::{Autodiff, Wgpu};
+                    type Backend = Wgpu<f32, i32>;
+                    type AutodiffBackend = Autodiff<Backend>;
+                    let device = burn::backend::wgpu::WgpuDevice::default();
 
-                    use burn::backend::Autodiff;
-                    use burn_cuda::{Cuda, CudaDevice};
-                    type MyBackend = Cuda<f32, i32>;
-                    type AutodiffBackend = Autodiff<MyBackend>;
-                    let device = CudaDevice::default();
+                    // use burn::backend::Autodiff;
+                    // use burn_cuda::{Cuda, CudaDevice};
+                    // type MyBackend = Cuda<f32, i32>;
+                    // type AutodiffBackend = Autodiff<MyBackend>;
+                    // let device = CudaDevice::default();
 
                     // use burn::backend::Autodiff;
                     // use burn::backend::NdArray;
@@ -155,7 +159,7 @@ fn main() {
                     .map(|i| {
                         // Give each thread a unique seed, while still being determinated from the root seed
                         let seed_bytes = (seed + i as u64).to_be_bytes();
-                        play(play_mode, seed_bytes)
+                        play(play_mode, seed_bytes, args.use_neural_network)
                     })
                     .inspect(|(n, score)| match play_mode {
                         PlayMode::Iterations(_) => println!("iterations: {n}, score: {score}"),
@@ -206,12 +210,14 @@ enum PlayMode {
 
 /// Play single game
 /// Returns duration or iteration and score
-fn play(play_mode: PlayMode, seed: [u8; 8]) -> (u64, i32) {
+fn play(play_mode: PlayMode, seed: [u8; 8], use_neural_network: bool) -> (u64, i32) {
     let mut game = Game::new_from_seed(seed);
     let mut mcts = MonteCarloTree::new_from_seed(game.clone(), seed);
 
-    // use mcts::heuristics::nn::edge_strategy::EdgeStrategy;
-    // let nn = EdgeStrategy::load("model-2");
+    if use_neural_network {
+        let device = burn::backend::wgpu::WgpuDevice::default();
+        mcts.heuristics.move_nn = Some(Heuristics::get_default_model(&device));
+    }
 
     while !game.ended {
         let mv = match play_mode {
@@ -219,11 +225,6 @@ fn play(play_mode: PlayMode, seed: [u8; 8]) -> (u64, i32) {
             PlayMode::Duration(duration) => mcts.search_duration(duration).best_move(),
         };
 
-        // println!(
-        //     "{mv}, pred: {:.1}, depth: {}",
-        //     nn.predict(&game.board, &mv),
-        //     mcts.calculate_depth()
-        // );
         mcts = MonteCarloTree::progress(mcts, mv, &mut game);
     }
 
