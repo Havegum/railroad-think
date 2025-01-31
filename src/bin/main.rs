@@ -16,9 +16,11 @@ enum Cli {
 
 #[derive(Args)]
 struct NeuralNetworkArgs {
+    /// A flag that determines if the program should train the neural network it uses to evaluate moves.
     #[arg(short, long)]
     train: bool,
 
+    /// A flag that determines if the program should run some games to create more data to train on.
     #[arg(short, long)]
     generate_training_data: bool,
 
@@ -30,6 +32,8 @@ struct NeuralNetworkArgs {
     #[arg(short, long, default_value = "700")]
     iterations: u64,
 
+    /// This flag tells the program to train endlessly. If both `generate-training-data` and `train`
+    /// are true, this will alternate between generating new training data, and training the network.
     #[arg(short, long)]
     loop_training: bool,
 }

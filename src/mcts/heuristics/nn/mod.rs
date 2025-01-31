@@ -22,7 +22,7 @@ impl ModelConfig {
 
         let conv_block1 = ConvBlock::init(12, 7, [3, 3], device);
         let conv_block2 = ConvBlock::init(7, 7, [3, 3], device);
-        let linear_block1 = LinearBlock::init(7 * 6 * 4 + input_b_size, 64, device);
+        let linear_block1 = LinearBlock::init(7 + input_b_size, 64, device);
         let linear_block2 = LinearBlock::init(64, 32, device);
         let output_block = LinearBlock::init(32, 1, device);
 
@@ -53,8 +53,9 @@ impl<B: Backend> Model<B> {
 
     pub fn forward(&self, input_a: Tensor<B, 4>, input_b: Tensor<B, 2>) -> Tensor<B, 2> {
         let [batch_size, _] = input_b.dims();
+        let x = input_a.swap_dims(1, 3);
 
-        let x = self.conv_block1.forward(input_a);
+        let x = self.conv_block1.forward(x);
         let x = self.conv_block2.forward(x);
         let [_, dim_x, dim_y, dim_z] = x.dims();
         let x = x.reshape([batch_size, dim_x * dim_y * dim_z]); // Flatten the tensor
