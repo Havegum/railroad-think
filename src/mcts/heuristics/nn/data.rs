@@ -150,7 +150,7 @@ impl DataItem {
     }
 
     #[must_use]
-    pub fn get_heuristics(board: &Board, mv: Move) -> [f32; 10] {
+    pub fn get_heuristics(board: &Board, mv: Move) -> [f32; 11] {
         fn to_f32(boolean: bool) -> f32 {
             if boolean {
                 1.0
@@ -163,6 +163,7 @@ impl DataItem {
                 board.score_center_tiles() as f32,
                 board.score_open_end() as f32,
                 board.score_network() as f32,
+                board.pct_filled(),
                 0.0,
                 1.0,
                 to_f32(board.piece_connects_to_exit(placement)),
@@ -176,6 +177,7 @@ impl DataItem {
                 board.score_center_tiles() as f32,
                 board.score_open_end() as f32,
                 board.score_network() as f32,
+                board.pct_filled(),
                 1.0,
                 0.0,
                 0.0,
@@ -184,7 +186,7 @@ impl DataItem {
                 0.0,
                 0.0,
             ],
-            _ => [0.0; 10],
+            _ => [0.0; 11],
         }
     }
 }

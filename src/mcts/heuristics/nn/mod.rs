@@ -18,7 +18,7 @@ pub struct ModelConfig {}
 impl ModelConfig {
     /// Returns the initialized model.
     pub fn init<B: Backend>(&self, device: &B::Device) -> Model<B> {
-        let input_b_size = 10;
+        let input_b_size = 11;
 
         let conv_block1 = ConvBlock::init(12, 7, [3, 3], device);
         let conv_block2 = ConvBlock::init(7, 7, [3, 3], device);

@@ -1,14 +1,12 @@
 use burn::nn::conv::{Conv2d, Conv2dConfig};
-use burn::nn::pool::{AvgPool2d, MaxPool2d, MaxPool2dConfig};
-// use burn::nn::pool::{MaxPool2d, MaxPool2dConfig};
-use burn::nn::{BatchNorm, BatchNormConfig, Gelu};
+use burn::nn::pool::{AvgPool2d, AvgPool2dConfig};
+use burn::nn::Gelu;
 use burn::prelude::{Backend, Module, Tensor};
 
 #[derive(Module, Debug)]
 pub struct ConvBlock<B: Backend> {
     conv: Conv2d<B>,
-    pool: MaxPool2d,
-    // norm: BatchNorm<B, 2>,
+    pool: AvgPool2d,
     activation: Gelu,
 }
 
@@ -20,8 +18,7 @@ impl<B: Backend> ConvBlock<B> {
         device: &B::Device,
     ) -> Self {
         let conv = Conv2dConfig::new([in_channels, out_channels], kernel_size).init(device);
-        let pool = MaxPool2dConfig::new(kernel_size).init();
-        // let norm = BatchNormConfig::new(out_channels).init(device);
+        let pool = AvgPool2dConfig::new(kernel_size).init();
         Self {
             conv,
             pool,

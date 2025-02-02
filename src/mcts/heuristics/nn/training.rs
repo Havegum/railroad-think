@@ -30,7 +30,7 @@ pub struct TrainingConfig {
     #[config(default = 50)]
     pub num_epochs: usize,
 
-    #[config(default = 256)]
+    #[config(default = 128)]
     pub batch_size: usize,
 
     #[config(default = 8)]
@@ -126,7 +126,7 @@ pub fn run<B: AutodiffBackend>(device: &B::Device) {
             Aggregate::Mean,
             Direction::Lowest,
             Split::Valid,
-            StoppingCondition::NoImprovementSince { n_epochs: 2 },
+            StoppingCondition::NoImprovementSince { n_epochs: 10 },
         ))
         .devices(vec![device.clone()])
         .num_epochs(config.num_epochs)
