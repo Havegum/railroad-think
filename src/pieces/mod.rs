@@ -12,10 +12,12 @@ pub enum Connection {
 }
 
 impl Connection {
+    #[must_use]
     pub fn is_none(self) -> bool {
         matches!(self, Connection::None)
     }
 
+    #[must_use]
     pub fn is_some(self) -> bool {
         !self.is_none()
     }
@@ -37,6 +39,9 @@ pub struct Piece {
 }
 
 impl Piece {
+    /// # Panics
+    /// Panics if the specified rotations have no corresponding set of orientations. This should never happen.
+    #[must_use]
     pub fn get_permutations(&self) -> Vec<Orientation> {
         match (self.flippable, self.rotations) {
             (false, 0b1000) => vec![Orientation::new(0, false)],
@@ -70,6 +75,7 @@ impl Piece {
         }
     }
 
+    #[must_use]
     pub fn permute(mut self, permutation: Orientation) -> Self {
         for connections in &mut self.networks {
             if let Some(mut c) = connections.take() {
@@ -85,14 +91,17 @@ impl Piece {
         self
     }
 
+    #[must_use]
     pub fn is_optional(piece: u8) -> bool {
         piece >= 0x0a
     }
 
+    #[must_use]
     pub fn is_special(piece: u8) -> bool {
         0x0A < piece && piece < 0x10
     }
 
+    #[must_use]
     pub fn get_networks(piece: u8, orientation: Orientation) -> [Option<[Connection; 4]>; 2] {
         get_piece(piece).map_or([Option::None, Option::None], |piece| {
             piece.permute(orientation).networks
@@ -123,6 +132,7 @@ impl Connected for Piece {
     }
 }
 
+#[must_use]
 pub const fn get_piece(id: u8) -> Option<Piece> {
     match id {
         0x01 => Some(Piece {

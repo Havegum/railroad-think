@@ -600,18 +600,34 @@ mod test {
         }
 
         assert_eq!(game_a, game_b);
+    }
 
-        // I don't think we need to prove the negative case.
-        // let mut game_c = Game::new_from_seed(seed);
-        // let seed = [1; 8];
-        // let mut mcts_c = MonteCarloTree::new_from_seed(game_c.clone(), seed);
+    #[test]
+    fn test_score_at_100_iterations() {
+        let tests = [
+            (42_u64, 100, 30),
+            (43_u64, 100, 33),
+            (44_u64, 100, 36),
+            (45_u64, 100, 42),
+            (46_u64, 100, 38),
+            (47_u64, 100, 29),
+            (48_u64, 100, 32),
+            (49_u64, 100, 41),
+            (50_u64, 100, 40),
+            (51_u64, 100, 39),
+        ];
 
-        // while !game_c.ended {
-        //     mcts_c.search_iterations(10);
-        //     let mv = mcts_c.best_move();
-        //     mcts_c = MonteCarloTree::progress(mcts_c, mv, &mut game_c);
-        // }
+        for (seed, iterations, min_score) in tests {
+            let seed = seed.to_be_bytes();
+            let mut game = Game::new_from_seed(seed);
+            let mut mcts = MonteCarloTree::new_from_seed(game.clone(), seed);
+            while !game.ended {
+                let mv = mcts.search_iterations(iterations).best_move();
 
-        // assert_ne!(game_a, game_c);
+                mcts = MonteCarloTree::progress(mcts, mv, &mut game);
+            }
+
+            assert!(game.board.score() >= min_score);
+        }
     }
 }
