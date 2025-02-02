@@ -32,27 +32,42 @@ use Connection::{None, Rail, Road};
 #[derive(Clone, Copy, Serialize, Debug)]
 pub struct Piece {
     pub networks: [Option<[Connection; 4]>; 2],
-    pub rotations: [bool; 4],
+    pub rotations: u8,
     pub flippable: bool,
 }
 
 impl Piece {
     pub fn get_permutations(&self) -> Vec<Orientation> {
-        let mut valid_permutations = Vec::with_capacity(if self.flippable { 8 } else { 4 });
+        match (self.flippable, self.rotations) {
+            (false, 0b1000) => vec![Orientation::new(0, false)],
+            (true, 0b1000) => vec![Orientation::new(0, false), Orientation::new(0, true)],
 
-        for flip in [true, false] {
-            if !self.flippable && flip {
-                continue;
-            }
-            for rotation in 0..4_u8 {
-                if !self.rotations[rotation as usize] {
-                    continue;
-                }
-                valid_permutations.push(Orientation::new(rotation, flip));
-            }
+            (false, 0b1100) => vec![Orientation::new(0, false), Orientation::new(1, false)],
+            (true, 0b1100) => vec![
+                Orientation::new(0, false),
+                Orientation::new(1, false),
+                Orientation::new(0, true),
+                Orientation::new(1, true),
+            ],
+
+            (false, 0b1111) => vec![
+                Orientation::new(0, false),
+                Orientation::new(1, false),
+                Orientation::new(2, false),
+                Orientation::new(3, false),
+            ],
+            (true, 0b1111) => vec![
+                Orientation::new(0, false),
+                Orientation::new(1, false),
+                Orientation::new(2, false),
+                Orientation::new(3, false),
+                Orientation::new(0, true),
+                Orientation::new(1, true),
+                Orientation::new(2, true),
+                Orientation::new(3, true),
+            ],
+            (_, _) => panic!(),
         }
-
-        valid_permutations
     }
 
     pub fn permute(mut self, permutation: Orientation) -> Self {
@@ -113,42 +128,42 @@ pub const fn get_piece(id: u8) -> Option<Piece> {
         0x01 => Some(Piece {
             // L rail
             networks: [Some([Rail, Rail, None, None]), Option::None],
-            rotations: [true, true, true, true],
+            rotations: 0b1111,
             flippable: false,
         }),
 
         0x02 => Some(Piece {
             // T rail
             networks: [Some([Rail, Rail, None, Rail]), Option::None],
-            rotations: [true, true, true, true],
+            rotations: 0b1111,
             flippable: false,
         }),
 
         0x03 => Some(Piece {
             // I rail
             networks: [Some([Rail, None, Rail, None]), Option::None],
-            rotations: [true, true, false, false],
+            rotations: 0b1100,
             flippable: false,
         }),
 
         0x04 => Some(Piece {
             // L road
             networks: [Some([Road, Road, None, None]), Option::None],
-            rotations: [true, true, true, true],
+            rotations: 0b1111,
             flippable: false,
         }),
 
         0x05 => Some(Piece {
             // T road
             networks: [Some([Road, Road, None, Road]), Option::None],
-            rotations: [true, true, true, true],
+            rotations: 0b1111,
             flippable: false,
         }),
 
         0x06 => Some(Piece {
             // I road
             networks: [Some([Road, None, Road, None]), Option::None],
-            rotations: [true, true, false, false],
+            rotations: 0b1100,
             flippable: false,
         }),
 
@@ -158,63 +173,63 @@ pub const fn get_piece(id: u8) -> Option<Piece> {
                 Some([Road, None, Road, None]),
                 Some([None, Rail, None, Rail]),
             ],
-            rotations: [true, true, false, false],
+            rotations: 0b1100,
             flippable: false,
         }),
 
         0x08 => Some(Piece {
             // I trans
             networks: [Some([Rail, None, Road, None]), Option::None],
-            rotations: [true, true, true, true],
+            rotations: 0b1111,
             flippable: false,
         }),
 
         0x09 => Some(Piece {
             // L trans
             networks: [Some([Road, Rail, None, None]), Option::None],
-            rotations: [true, true, true, true],
+            rotations: 0b1111,
             flippable: true,
         }),
 
         0x0A => Some(Piece {
             // X T road
             networks: [Some([Road, Road, Rail, Road]), Option::None],
-            rotations: [true, true, true, true],
+            rotations: 0b1111,
             flippable: false,
         }),
 
         0x0B => Some(Piece {
             // X T rail
             networks: [Some([Rail, Rail, Road, Rail]), Option::None],
-            rotations: [true, true, true, true],
+            rotations: 0b1111,
             flippable: false,
         }),
 
         0x0C => Some(Piece {
             // X road
             networks: [Some([Road, Road, Road, Road]), Option::None],
-            rotations: [true, false, false, false],
+            rotations: 0b1000,
             flippable: false,
         }),
 
         0x0D => Some(Piece {
             // X rail
             networks: [Some([Rail, Rail, Rail, Rail]), Option::None],
-            rotations: [true, false, false, false],
+            rotations: 0b1000,
             flippable: false,
         }),
 
         0x0E => Some(Piece {
             // X L
             networks: [Some([Road, Road, Rail, Rail]), Option::None],
-            rotations: [true, true, true, true],
+            rotations: 0b1111,
             flippable: false,
         }),
 
         0x0F => Some(Piece {
             // X I
             networks: [Some([Road, Rail, Road, Rail]), Option::None],
-            rotations: [true, true, false, false],
+            rotations: 0b1100,
             flippable: false,
         }),
         _ => Option::None,
