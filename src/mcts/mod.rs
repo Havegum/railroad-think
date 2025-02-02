@@ -604,26 +604,26 @@ mod test {
 
     #[test]
     fn test_score_at_100_iterations() {
-        let tests = [
-            (42_u64, 100, 30),
-            (43_u64, 100, 33),
-            (44_u64, 100, 36),
-            (45_u64, 100, 42),
-            (46_u64, 100, 38),
-            (47_u64, 100, 29),
-            (48_u64, 100, 32),
-            (49_u64, 100, 41),
-            (50_u64, 100, 40),
-            (51_u64, 100, 39),
+        let tests: [(u64, u64, i32); 10] = [
+            (42, 100, 30),
+            (43, 100, 33),
+            (44, 100, 36),
+            (45, 100, 42),
+            (46, 100, 38),
+            (47, 100, 29),
+            (48, 100, 32),
+            (49, 100, 41),
+            (50, 100, 40),
+            (51, 100, 39),
         ];
 
         for (seed, iterations, min_score) in tests {
             let seed = seed.to_be_bytes();
             let mut game = Game::new_from_seed(seed);
             let mut mcts = MonteCarloTree::new_from_seed(game.clone(), seed);
+
             while !game.ended {
                 let mv = mcts.search_iterations(iterations).best_move();
-
                 mcts = MonteCarloTree::progress(mcts, mv, &mut game);
             }
 
