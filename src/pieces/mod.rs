@@ -38,7 +38,7 @@ pub struct Piece {
 
 impl Piece {
     pub fn get_permutations(&self) -> Vec<Orientation> {
-        let mut valid_permutations = Vec::new();
+        let mut valid_permutations = Vec::with_capacity(if self.flippable { 8 } else { 4 });
 
         for flip in [true, false] {
             if !self.flippable && flip {

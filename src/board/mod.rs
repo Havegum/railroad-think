@@ -1,6 +1,5 @@
 use crate::identity_hasher;
 use crate::identity_hasher::BuildHasher;
-use std::convert::TryFrom;
 use std::ops::{Index, IndexMut};
 use strum::IntoEnumIterator;
 
@@ -453,7 +452,7 @@ impl Board {
 
     #[must_use]
     pub fn pct_filled(&self) -> f32 {
-        let total = BOARD_SIZE.pow(2) as f32;
+        let total = f32::from(BOARD_SIZE.pow(2));
         let filled = self.placements.iter().filter(|p| p.is_some()).count() as f32;
         filled / total
     }
@@ -492,8 +491,8 @@ impl Board {
                 12 => 45,
                 exits => (exits.saturating_sub(1)) * 4,
             })
-            .sum::<u8>() as i32;
-        network_score
+            .sum::<u8>();
+        i32::from(network_score)
     }
 
     /// Score the board.
@@ -512,7 +511,6 @@ impl Board {
         let road_score = longest_road.len() as i32;
 
         let score = network_score + road_score + rail_score + center_tile_score;
-        let score = i32::try_from(score).unwrap_or(i32::MAX);
         score - open_end_score
     }
 
@@ -606,7 +604,7 @@ impl Board {
                 .filter(|&direction| place.has_connection(direction, connection))
                 .map(|direction| (direction, Self::get_neighbor(square, direction)))
                 .filter_map(|(direction, square)| {
-                    self.get(square).map_or(None, |neighbor| {
+                    self.get(square).and_then(|neighbor| {
                         if neighbor.has_connection(direction.inverse(), connection) {
                             Some(neighbor.square)
                         } else {

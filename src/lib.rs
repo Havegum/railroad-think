@@ -12,7 +12,7 @@ pub mod controllers;
 pub mod game;
 mod identity_hasher;
 pub mod mcts;
-mod pieces;
+pub mod pieces;
 pub mod utils;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
