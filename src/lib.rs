@@ -5,7 +5,13 @@
     // clippy::nursery,
     clippy::cargo
 )]
-#![allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
+#![allow(
+    clippy::cast_precision_loss,
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_possible_wrap,
+    clippy::multiple_crate_versions
+)]
 
 pub mod board;
 pub mod controllers;

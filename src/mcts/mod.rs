@@ -89,7 +89,7 @@ pub struct Edge {
 
 impl Edge {
     #[must_use]
-    pub fn new(mv: Move) -> Self {
+    pub const fn new(mv: Move) -> Self {
         Self {
             mv,
             child: None,
@@ -131,8 +131,7 @@ impl Edge {
                 if let Some(child) = nodes.get_mut(&roll) {
                     child
                 } else {
-                    let child = Node::new();
-                    nodes.insert(roll, child);
+                    nodes.insert(roll, Node::new());
                     generate_children = true;
                     nodes.get_mut(&roll).unwrap()
                 }

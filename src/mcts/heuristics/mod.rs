@@ -14,7 +14,6 @@ use ord_subset::OrdSubsetIterExt;
 use std::fs::File;
 use std::io::prelude::*;
 pub mod nn;
-mod rave;
 
 pub type HeuristicOptions = [[f64; 7]; 8];
 use serde::{Deserialize, Serialize};
@@ -54,23 +53,24 @@ impl Parameters {
     /// # Errors
     /// Returns an error if the file cannot be opened.
     pub fn from_json(path: &str) -> Result<Self, String> {
-        if let Ok(mut file) = File::open(path) {
-            let mut contents = String::new();
+        File::open(path).map_or_else(
+            |_| Err("Error loading Heuristics: Could not find path".to_string()),
+            |mut file| {
+                let mut contents = String::new();
 
-            file.read_to_string(&mut contents)
-                .expect("Error loading Heuristics: Could not read file to string");
+                file.read_to_string(&mut contents)
+                    .expect("Error loading Heuristics: Could not read file to string");
 
-            match serde_json::from_str(&contents) {
-                Ok(parameters) => Ok(parameters),
-                Err(e) => Err(format!("Error loading Heuristics: {e}")),
-            }
-        } else {
-            Err("Error loading Heuristics: Could not find path".to_string())
-        }
+                match serde_json::from_str(&contents) {
+                    Ok(parameters) => Ok(parameters),
+                    Err(e) => Err(format!("Error loading Heuristics: {e}")),
+                }
+            },
+        )
     }
 
     #[must_use]
-    pub fn as_array(&self) -> [[f64; 7]; 8] {
+    pub const fn as_array(&self) -> [[f64; 7]; 8] {
         [
             self.unexplored_value,
             self.exploration_variables,
@@ -104,21 +104,16 @@ impl From<[[f64; 7]; 8]> for Parameters {
 #[derive(Clone)]
 pub struct Heuristics {
     pub parameters: Parameters,
-    pub rave: Option<rave::Rave>,
     pub tree_reuse: bool,
     pub move_nn: Option<Model<Wgpu>>,
 }
 
 impl Heuristics {
     #[must_use]
-    pub fn new(parameters: Parameters) -> Self {
-        // let mut rave = rave::Rave::new();
-        // let rave = Some(rave);
-
+    pub const fn new(parameters: Parameters) -> Self {
         Self {
             parameters,
             move_nn: None,
-            rave: None,
             tree_reuse: true,
         }
     }
@@ -175,13 +170,13 @@ impl Heuristics {
     }
 
     #[must_use]
-    pub fn exploration_bias(&self, turn: usize) -> f64 {
+    pub const fn exploration_bias(&self, turn: usize) -> f64 {
         self.parameters.exploration_variables[turn - 1]
     }
 
     #[must_use]
     /// Recieve a value if the move would expend a special piece
-    pub fn special_use(&self, turn: usize, mv: Move) -> f64 {
+    pub const fn special_use(&self, turn: usize, mv: Move) -> f64 {
         if let Move::Place(placement) = mv {
             if turn < 7 && Piece::is_special(placement.piece) {
                 return self.parameters.special_cost[turn - 1];
@@ -249,11 +244,7 @@ impl Heuristics {
         0.0
     }
 
-    pub fn update(&mut self, turn: u8, mv: Move, score: f64) {
-        if let Some(rave) = &mut self.rave {
-            rave.update_rave(turn, mv, score);
-        }
-    }
+    pub fn update(&mut self, _turn: u8, _mv: Move, _score: f64) {}
 
     // #[must_use]
     // Recieve a value if the move connects to the edge of the longest network path
@@ -409,15 +400,6 @@ impl Heuristics {
 
         if self.move_nn.is_some() {
             unimplemented!("Neural net not yet implemented!");
-        } else if let Some(rave) = self.rave.as_ref() {
-            let k = 1.;
-            let rave_value = rave.get_rave(turn as u8, mv);
-            let rave_value = rave_value + rave.rave_exploration_bias;
-            let n = visits as f64;
-            let beta = (k / 3.0f64.mul_add(n, k)).sqrt();
-            let q = (1.0 - beta).mul_add(ucb, beta * rave_value);
-
-            q + exploration_term
         } else {
             let estimated_value = self.get_move_estimation(game, mv);
             let k = 1.;

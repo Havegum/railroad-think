@@ -13,12 +13,12 @@ pub enum Connection {
 
 impl Connection {
     #[must_use]
-    pub fn is_none(self) -> bool {
-        matches!(self, Connection::None)
+    pub const fn is_none(self) -> bool {
+        matches!(self, Self::None)
     }
 
     #[must_use]
-    pub fn is_some(self) -> bool {
+    pub const fn is_some(self) -> bool {
         !self.is_none()
     }
 }
@@ -92,12 +92,12 @@ impl Piece {
     }
 
     #[must_use]
-    pub fn is_optional(piece: u8) -> bool {
+    pub const fn is_optional(piece: u8) -> bool {
         piece >= 0x0a
     }
 
     #[must_use]
-    pub fn is_special(piece: u8) -> bool {
+    pub const fn is_special(piece: u8) -> bool {
         0x0A < piece && piece < 0x10
     }
 

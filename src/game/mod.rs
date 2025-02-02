@@ -52,7 +52,7 @@ impl Game {
 
     #[must_use]
     pub fn new_from_seed(seed: [u8; 8]) -> Self {
-        let mut game = Game {
+        let mut game = Self {
             rng: SplitMix64::from_seed(seed),
             ..Default::default()
         };
@@ -299,10 +299,9 @@ impl Game {
             .reduce(|cat, next| cat + &next)
             .unwrap_or_default();
 
-        let special_placed = match self.special_placed {
-            None => String::new(),
-            Some(piece) => format!("{piece:02X?}"),
-        };
+        let special_placed = self
+            .special_placed
+            .map_or_else(String::new, |piece| format!("{piece:02X?}"));
 
         let board = self.board.encode();
 

@@ -17,7 +17,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("permute pieces", |b| {
         b.iter(|| {
             for piece in pieces.iter().filter_map(|&id| get_piece(id)) {
-                black_box(piece).get_permutations();
+                let _ = black_box(piece).get_permutations();
             }
         })
     });

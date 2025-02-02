@@ -5,7 +5,7 @@ pub struct Roll(pub [u8; 4]);
 
 impl Roll {
     #[must_use]
-    pub fn new(roll: [u8; 4]) -> Self {
+    pub const fn new(roll: [u8; 4]) -> Self {
         Self(roll)
     }
 

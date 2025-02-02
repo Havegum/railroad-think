@@ -22,7 +22,6 @@ pub fn simulated_annealing(
 ) -> HeuristicOptions {
     let path = "./config/heuristics.json";
     let mut heuristics = Heuristics::from_json(path).expect("Error: Could not load heuristics");
-    heuristics.rave = None;
     heuristics.move_nn = None;
     let heuristics = heuristics;
 

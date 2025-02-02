@@ -16,29 +16,28 @@ use std::str::FromStr;
 /// # Panics
 /// Panics if the database does not exist and then could not be created.
 pub fn get_connection() -> rusqlite::Connection {
-    let conn = rusqlite::Connection::open_with_flags(
+    rusqlite::Connection::open_with_flags(
         "./data.sqlite",
         OpenFlags::SQLITE_OPEN_READ_WRITE | OpenFlags::SQLITE_OPEN_NO_MUTEX,
-    );
+    )
+    .unwrap_or_else(|_| {
+        {
+            let conn = rusqlite::Connection::open("./data.sqlite").unwrap();
 
-    if let Ok(c) = conn {
-        c
-    } else {
-        let conn = rusqlite::Connection::open("./data.sqlite").unwrap();
+            conn.execute(
+                "CREATE TABLE matches (
+                id     INTEGER PRIMARY KEY,
+                board  TEXT    NOT NULL,
+                move   TEXT    NOT NULL,
+                score  INTEGER NOT NULL
+            )",
+                (), // empty list of parameters.
+            )
+            .unwrap();
 
-        conn.execute(
-            "CREATE TABLE matches (
-                    id     INTEGER PRIMARY KEY,
-                    board  TEXT    NOT NULL,
-                    move   TEXT    NOT NULL,
-                    score  INTEGER NOT NULL
-                )",
-            (), // empty list of parameters.
-        )
-        .unwrap();
-
-        conn
-    }
+            conn
+        }
+    })
 }
 
 #[derive(Clone)]
@@ -47,7 +46,7 @@ pub struct DataBatcher<B: Backend> {
 }
 
 impl<B: Backend> DataBatcher<B> {
-    pub fn new(device: B::Device) -> Self {
+    pub const fn new(device: B::Device) -> Self {
         Self { device }
     }
 }
@@ -151,7 +150,7 @@ impl DataItem {
 
     #[must_use]
     pub fn get_heuristics(board: &Board, mv: Move) -> [f32; 11] {
-        fn to_f32(boolean: bool) -> f32 {
+        const fn to_f32(boolean: bool) -> f32 {
             if boolean {
                 1.0
             } else {
